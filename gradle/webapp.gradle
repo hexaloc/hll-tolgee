@@ -14,7 +14,7 @@ tasks.register('copyDist', Copy) {
 
 tasks.register('installLibraryDeps', Exec) {
     onlyIf { System.getenv("SKIP_WEBAPP_BUILD") != "true" }
-    commandLine npmCommandName, "ci"
+    commandLine npmCommandName, "install", "--legacy-peer-deps"
     workingDir = libraryPath
     inputs.file("${libraryPath}/package.json")
     inputs.file("${libraryPath}/package-lock.json")
@@ -23,7 +23,7 @@ tasks.register('installLibraryDeps', Exec) {
 
 tasks.register('installWebappDeps', Exec) {
     onlyIf { System.getenv("SKIP_WEBAPP_BUILD") != "true" }
-    commandLine npmCommandName, "ci"
+    commandLine npmCommandName, "install", "--legacy-peer-deps"
     workingDir = webappPath
     inputs.file("${webappPath}/package.json")
     inputs.file("${webappPath}/package-lock.json")
