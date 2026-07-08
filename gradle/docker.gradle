@@ -25,7 +25,7 @@ tasks.register('docker') {
         exec {
             workingDir dockerPath
             commandLine "docker", "build", ".",
-                "-t", "tolgee/tolgee",
+                "-t", "entsalze/tolgee",
                 "--build-arg", "OTEL_AGENT_VERSION=${opentelemetryJavaagentVersion}",
                 "--cache-from", "type=registry,ref=tolgee/tolgee:latest"
         }
