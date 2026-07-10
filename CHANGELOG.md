@@ -1,3 +1,31 @@
+# [3.210.0](https://github.com/tolgee/tolgee-platform/compare/v3.209.6...v3.210.0) (2026-07-10)
+
+
+### Features
+
+* scoped search query language in translations view ([#3794](https://github.com/tolgee/tolgee-platform/issues/3794)) ([0623ea1](https://github.com/tolgee/tolgee-platform/commit/0623ea1d4e8a4eef4793c966401597db940523db))
+
+## [3.209.6](https://github.com/tolgee/tolgee-platform/compare/v3.209.5...v3.209.6) (2026-07-09)
+
+
+### Bug Fixes
+
+* raise default LLM max tokens, drop temperature from Anthropic requests ([#3798](https://github.com/tolgee/tolgee-platform/issues/3798)) ([92913db](https://github.com/tolgee/tolgee-platform/commit/92913dbef2a54a8e91b4a1fa78e4c1895a9fe4ac)), closes [#3797](https://github.com/tolgee/tolgee-platform/issues/3797) [tolgee/deployment#755](https://github.com/tolgee/deployment/issues/755)
+
+## [3.209.5](https://github.com/tolgee/tolgee-platform/compare/v3.209.4...v3.209.5) (2026-07-09)
+
+
+### Bug Fixes
+
+* don't fail whole machine translation job on unparseable LLM response ([#3797](https://github.com/tolgee/tolgee-platform/issues/3797)) ([6389545](https://github.com/tolgee/tolgee-platform/commit/6389545ed2aa6590b6376083cb11b238effbd446)), closes [#2092](https://github.com/tolgee/tolgee-platform/issues/2092) [#1793](https://github.com/tolgee/tolgee-platform/issues/1793)
+
+## [3.209.4](https://github.com/tolgee/tolgee-platform/compare/v3.209.3...v3.209.4) (2026-07-08)
+
+
+### Bug Fixes
+
+* keep session open for glossary highlight lazy loading ([#3793](https://github.com/tolgee/tolgee-platform/issues/3793)) ([0a3216a](https://github.com/tolgee/tolgee-platform/commit/0a3216a792a5559735b05803d4276b035ec2a609))
+
 ## [3.209.3](https://github.com/tolgee/tolgee-platform/compare/v3.209.2...v3.209.3) (2026-07-08)
 
 
