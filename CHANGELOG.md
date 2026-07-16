@@ -1,3 +1,59 @@
+# [3.213.0](https://github.com/tolgee/tolgee-platform/compare/v3.212.1...v3.213.0) (2026-07-16)
+
+
+### Features
+
+* Community Translation v1 ([#3765](https://github.com/tolgee/tolgee-platform/issues/3765)) ([4a4ea3f](https://github.com/tolgee/tolgee-platform/commit/4a4ea3f55a583e8176c13c77dbd039d77aec56d5)), closes [#3770](https://github.com/tolgee/tolgee-platform/issues/3770) [#3771](https://github.com/tolgee/tolgee-platform/issues/3771) [#3776](https://github.com/tolgee/tolgee-platform/issues/3776) [#3785](https://github.com/tolgee/tolgee-platform/issues/3785) [#3774](https://github.com/tolgee/tolgee-platform/issues/3774) [#3775](https://github.com/tolgee/tolgee-platform/issues/3775) [#3770](https://github.com/tolgee/tolgee-platform/issues/3770) [#3777](https://github.com/tolgee/tolgee-platform/issues/3777) [#3792](https://github.com/tolgee/tolgee-platform/issues/3792)
+
+## [3.212.1](https://github.com/tolgee/tolgee-platform/compare/v3.212.0...v3.212.1) (2026-07-15)
+
+
+### Bug Fixes
+
+* webhooks - don't encode URLs that already contain "%" ([#3803](https://github.com/tolgee/tolgee-platform/issues/3803)) ([0cac1cd](https://github.com/tolgee/tolgee-platform/commit/0cac1cd3a9923a8905cfce5495cbeae1802c4000)), closes [#3709](https://github.com/tolgee/tolgee-platform/issues/3709) [#3709](https://github.com/tolgee/tolgee-platform/issues/3709)
+
+# [3.212.0](https://github.com/tolgee/tolgee-platform/compare/v3.211.4...v3.212.0) (2026-07-15)
+
+
+### Features
+
+* admin project export/import ([#3764](https://github.com/tolgee/tolgee-platform/issues/3764)) ([669d536](https://github.com/tolgee/tolgee-platform/commit/669d536fc3b20714c7a6c71a8bc42994e6b31584))
+
+## [3.211.4](https://github.com/tolgee/tolgee-platform/compare/v3.211.3...v3.211.4) (2026-07-14)
+
+
+### Bug Fixes
+
+* keep source ICU placeholders when AI translator uses translation memory ([#3755](https://github.com/tolgee/tolgee-platform/issues/3755)) ([6eff81a](https://github.com/tolgee/tolgee-platform/commit/6eff81a7a736c1b2bbc69f8e6cba7751c773f242)), closes [#3752](https://github.com/tolgee/tolgee-platform/issues/3752) [#3752](https://github.com/tolgee/tolgee-platform/issues/3752)
+
+## [3.211.3](https://github.com/tolgee/tolgee-platform/compare/v3.211.2...v3.211.3) (2026-07-13)
+
+
+### Bug Fixes
+
+* use key's configured plural arg name for machine translation ([#3786](https://github.com/tolgee/tolgee-platform/issues/3786)) ([453ed6b](https://github.com/tolgee/tolgee-platform/commit/453ed6b6264b805dadece30ec109148f82efb54a)), closes [#3772](https://github.com/tolgee/tolgee-platform/issues/3772)
+
+## [3.211.2](https://github.com/tolgee/tolgee-platform/compare/v3.211.1...v3.211.2) (2026-07-13)
+
+
+### Bug Fixes
+
+* handle Sonnet 5 adaptive thinking (safe parse + send disabled) ([#3802](https://github.com/tolgee/tolgee-platform/issues/3802)) ([7d0d8e8](https://github.com/tolgee/tolgee-platform/commit/7d0d8e8941e88dd7379aa6de6643f3a516cf0ce5))
+
+## [3.211.1](https://github.com/tolgee/tolgee-platform/compare/v3.211.0...v3.211.1) (2026-07-10)
+
+
+### Bug Fixes
+
+* recompute importable keys when import file namespace changes ([#3796](https://github.com/tolgee/tolgee-platform/issues/3796)) ([2337b86](https://github.com/tolgee/tolgee-platform/commit/2337b866b11906a4ca375d0afc5c117e77c971ba))
+
+# [3.211.0](https://github.com/tolgee/tolgee-platform/compare/v3.210.0...v3.211.0) (2026-07-10)
+
+
+### Features
+
+* add escapeJson helper for custom AI prompts ([#3799](https://github.com/tolgee/tolgee-platform/issues/3799)) ([63991d4](https://github.com/tolgee/tolgee-platform/commit/63991d49563f76609822bf8cbfcae8b16dd4ea66)), closes [#3683](https://github.com/tolgee/tolgee-platform/issues/3683)
+
 # [3.210.0](https://github.com/tolgee/tolgee-platform/compare/v3.209.6...v3.210.0) (2026-07-10)
 
 
