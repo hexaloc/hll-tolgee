@@ -1,6 +1,7 @@
 package io.tolgee.ee.unit
 
 import io.tolgee.component.CurrentDateProvider
+import io.tolgee.component.ResilientCacheAccessor
 import io.tolgee.component.adminMtServiceFilter.AdminMtServiceFilter
 import io.tolgee.configuration.tolgee.InternalProperties
 import io.tolgee.constants.Caches
@@ -24,7 +25,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
-import org.springframework.boot.web.client.RestTemplateBuilder
+import org.springframework.boot.restclient.RestTemplateBuilder
 import org.springframework.cache.Cache
 import org.springframework.cache.CacheManager
 import org.springframework.web.client.RestTemplate
@@ -90,6 +91,7 @@ class LlmProviderFallbackTest {
         llmProviderResolver = resolver,
         urlSecurity = mock<UrlSecurity>(),
         adminMtServiceFilter = adminMtServiceFilter,
+        resilientCacheAccessor = ResilientCacheAccessor(),
       )
   }
 
@@ -138,6 +140,35 @@ class LlmProviderFallbackTest {
 
     assertThatThrownBy {
       service.callProvider(orgId, "openai", createParams())
+    }.isInstanceOf(LlmProviderNotFoundException::class.java)
+  }
+
+  @Test
+  fun `default alias resolves to server default provider`() {
+    setupServerProviders("gpt-6", "claude")
+    whenever(llmPropertiesService.getDefaultProviderName()).thenReturn("claude")
+
+    val result = service.callProvider(orgId, "default", createParams())
+
+    assertThat(result.response).contains("claude")
+  }
+
+  @Test
+  fun `real provider named default wins over the alias`() {
+    setupServerProviders("default", "gpt-6")
+    whenever(llmPropertiesService.getDefaultProviderName()).thenReturn("gpt-6")
+
+    val result = service.callProvider(orgId, "default", createParams())
+
+    assertThat(result.response).contains("default")
+  }
+
+  @Test
+  fun `default alias throws when no providers exist`() {
+    setupServerProviders()
+
+    assertThatThrownBy {
+      service.callProvider(orgId, "default", createParams())
     }.isInstanceOf(LlmProviderNotFoundException::class.java)
   }
 

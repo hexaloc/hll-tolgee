@@ -141,6 +141,12 @@ class TestDataService(
       }
 
       updateLanguageStats(builder)
+
+      if (builder.afterSaveRawStates.isNotEmpty()) {
+        executeInNewTransaction(transactionManager) {
+          builder.afterSaveRawStates.forEach { it(entityManager) }
+        }
+      }
     } finally {
       activityHolder.enableAutoCompletion = true
       bypassableActivityListeners.forEach { it.bypass = false }
@@ -165,7 +171,7 @@ class TestDataService(
     tryUntilItDoesntBreakConstraint {
       executeInNewTransaction(transactionManager) {
         builder.data.userAccounts.forEach {
-          userAccountService.findActive(it.self.username)?.let { user ->
+          userAccountService.findAllByUsername(it.self.username).forEach { user ->
             notificationService.deleteNotificationsOfUser(user.id)
             userAccountService.delete(user)
           }
@@ -744,7 +750,7 @@ class TestDataService(
   private fun encodePassword(rawPassword: String?): String? {
     rawPassword ?: return null
     return passwordHashCache.computeIfAbsent(rawPassword) {
-      passwordEncoder.encode(rawPassword)
+      passwordEncoder.encode(rawPassword)!!
     }
   }
 

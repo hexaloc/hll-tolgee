@@ -38,7 +38,8 @@ class GlossaryTermService(
     glossaryId: Long,
     termId: Long,
   ): GlossaryTerm? {
-    return glossaryTermRepository.find(organizationId, glossaryId, termId)
+    val glossary = glossaryService.find(organizationId, glossaryId) ?: return null
+    return glossaryTermRepository.findByGlossaryAndId(glossary, termId)
   }
 
   fun findAll(
@@ -70,7 +71,7 @@ class GlossaryTermService(
     val glossary = glossaryService.get(organizationId, glossaryId)
     val termIds = glossaryTermRepository.findByGlossaryIdsPaged(glossary, pageable, search, languageTags)
     val terms = glossaryTermRepository.findByIdsWithTranslations(termIds.content).associateBy { it.id }
-    return termIds.map { terms[it] }
+    return termIds.map { terms[it]!! }
   }
 
   fun findAllWithTranslations(
