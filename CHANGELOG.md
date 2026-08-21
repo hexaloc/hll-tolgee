@@ -1,3 +1,24 @@
+## [3.218.3](https://github.com/tolgee/tolgee-platform/compare/v3.218.2...v3.218.3) (2026-08-18)
+
+
+### Bug Fixes
+
+* Revert "fix: set correct MIME type on content delivery published files ([#3836](https://github.com/tolgee/tolgee-platform/issues/3836))" ([eca6fbe](https://github.com/tolgee/tolgee-platform/commit/eca6fbe0ae83d8f20b1553a024fd28e238db3c25))
+
+## [3.218.2](https://github.com/tolgee/tolgee-platform/compare/v3.218.1...v3.218.2) (2026-08-18)
+
+
+### Bug Fixes
+
+* restore Jackson 2 handling of absent numeric fields ([#3857](https://github.com/tolgee/tolgee-platform/issues/3857)) ([510ca06](https://github.com/tolgee/tolgee-platform/commit/510ca06d8c81a0a06eb14fdb0f20d803ece56eaa)), closes [#3804](https://github.com/tolgee/tolgee-platform/issues/3804) [#3856](https://github.com/tolgee/tolgee-platform/issues/3856)
+
+## [3.218.1](https://github.com/tolgee/tolgee-platform/compare/v3.218.0...v3.218.1) (2026-08-17)
+
+
+### Bug Fixes
+
+* set correct MIME type on content delivery published files ([#3836](https://github.com/tolgee/tolgee-platform/issues/3836)) ([299dc9d](https://github.com/tolgee/tolgee-platform/commit/299dc9d1d9f3e15ed7ae336826edafc098f56cc9)), closes [#2504](https://github.com/tolgee/tolgee-platform/issues/2504)
+
 # [3.218.0](https://github.com/tolgee/tolgee-platform/compare/v3.217.0...v3.218.0) (2026-08-06)
 
 
