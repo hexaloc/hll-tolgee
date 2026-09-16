@@ -24,10 +24,10 @@ class GlossaryGuestAccessTestData : BaseTestData() {
   lateinit var softDeletedProjectGlossary: Glossary
   lateinit var softDeletedBaseLangProject: Project
   lateinit var softDeletedBaseLangGlossary: Glossary
-  lateinit var storedGuest: UserAccount
-  lateinit var virtualGuest: UserAccount
-  lateinit var directPermissionUser: UserAccount
-  lateinit var noneOnlyUser: UserAccount
+  var storedGuest: UserAccount
+  var virtualGuest: UserAccount
+  var directPermissionUser: UserAccount
+  var noneOnlyUser: UserAccount
 
   init {
     root.apply {
@@ -65,6 +65,11 @@ class GlossaryGuestAccessTestData : BaseTestData() {
       }.build {
         publicProject = self
         addBaseLanguage()
+        addLanguage {
+          name = "French"
+          tag = "fr"
+          originalName = "Français"
+        }
       }
 
       addProject(organizationOwner = userAccountBuilder.defaultOrganizationBuilder.self) {

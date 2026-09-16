@@ -110,6 +110,9 @@ export class LINKS {
     'accept_auth_provider_change'
   );
 
+  static OAUTH2 = Link.ofRoot('oauth2');
+  static OAUTH2_CONSENT = Link.ofParent(LINKS.OAUTH2, 'consent');
+
   static GO_TO_CLOUD_BILLING = Link.ofRoot('billing');
   static GO_TO_SELF_HOSTED_BILLING = Link.ofRoot('billing-self-hosted');
 
@@ -226,6 +229,11 @@ export class LINKS {
   );
 
   static ORGANIZATION_BILLING = Link.ofParent(LINKS.ORGANIZATION, 'billing');
+
+  static ORGANIZATION_BILLING_PLANS = Link.ofParent(
+    LINKS.ORGANIZATION_BILLING,
+    'plans'
+  );
 
   static ORGANIZATION_SUBSCRIPTIONS = Link.ofParent(
     LINKS.ORGANIZATION,

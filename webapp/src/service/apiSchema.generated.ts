@@ -108,7 +108,7 @@ export interface paths {
     get: operations["getCurrent_1"];
   };
   "/v2/api-keys/current-permissions": {
-    /** Returns current PAK or PAT permissions for current user, api-key and project */
+    /** Returns the current PAK, PAT or OAuth token permissions for current user, api-key and project */
     get: operations["getCurrentPermissions"];
   };
   "/v2/api-keys/{apiKeyId}": {
@@ -176,6 +176,15 @@ export interface paths {
   };
   "/v2/notifications-mark-seen": {
     put: operations["markNotificationsAsSeen"];
+  };
+  "/v2/oauth2/authorize": {
+    post: operations["authorize"];
+  };
+  "/v2/oauth2/consent": {
+    post: operations["consent"];
+  };
+  "/v2/oauth2/consent-info": {
+    get: operations["consentInfo"];
   };
   "/v2/organizations": {
     /** Returns all organizations, which is current user allowed to view */
@@ -376,8 +385,16 @@ export interface paths {
     get: operations["getUsage"];
   };
   "/v2/organizations/{organizationId}/users/{userId}": {
-    /** Remove user from organization. If user is managed by the organization, their account is disabled instead. */
+    /** Removes the user from the organization. Users managed by the organization cannot be removed; disable them instead. */
     delete: operations["removeUser"];
+  };
+  "/v2/organizations/{organizationId}/users/{userId}/disable": {
+    /** Disables the account of a user managed by this organization. */
+    put: operations["disableManagedUser"];
+  };
+  "/v2/organizations/{organizationId}/users/{userId}/enable": {
+    /** Re-enables the disabled account of a user managed by this organization. */
+    put: operations["enableManagedUser"];
   };
   "/v2/organizations/{organizationId}/users/{userId}/set-role": {
     /** Sets user role in organization. Owner or Member. */
@@ -1444,6 +1461,7 @@ export interface components {
         | "webhooks.manage"
         | "tasks.view"
         | "tasks.edit"
+        | "tasks.assigned-access"
         | "prompts.view"
         | "prompts.edit"
         | "translation-labels.manage"
@@ -1654,6 +1672,8 @@ export interface components {
         | "SET_KEYS_NAMESPACE"
         | "AUTOMATION"
         | "BILLING_TRIAL_EXPIRATION_NOTICE"
+        | "BILLING_AUTO_UPGRADE_NOTICE"
+        | "BILLING_AUTO_UPGRADE_RENEWAL"
         | "ASSIGN_TRANSLATION_LABEL"
         | "UNASSIGN_TRANSLATION_LABEL"
         | "QA_CHECK"
@@ -2161,6 +2181,7 @@ export interface components {
         | "webhooks.manage"
         | "tasks.view"
         | "tasks.edit"
+        | "tasks.assigned-access"
         | "prompts.view"
         | "prompts.edit"
         | "translation-labels.manage"
@@ -2221,6 +2242,14 @@ export interface components {
     };
     ConnectToSlackUrlModel: {
       url: string;
+    };
+    ConsentInfoModel: {
+      appName: string;
+      project?: components["schemas"]["OAuth2ProjectModel"];
+      /** Format: int64 */
+      requestedProjectId?: number;
+      requiredScopes: string[];
+      scopes: string[];
     };
     ContentDeliveryConfigModel: {
       autoPublish: boolean;
@@ -2724,6 +2753,7 @@ export interface components {
       keys: components["schemas"]["CurrentUsageItemModel"];
       seats: components["schemas"]["CurrentUsageItemModel"];
       strings: components["schemas"]["CurrentUsageItemModel"];
+      words?: components["schemas"]["CurrentUsageItemModel"];
     };
     DeleteKeysDto: {
       /** @description IDs of keys to delete */
@@ -3033,6 +3063,14 @@ export interface components {
         | "rate_limited"
         | "pat_access_not_allowed"
         | "pak_access_not_allowed"
+        | "oauth_access_not_allowed"
+        | "invalid_oauth_token"
+        | "oauth_token_expired"
+        | "oauth_unknown_client"
+        | "oauth_redirect_uri_not_registered"
+        | "oauth_unknown_state"
+        | "oauth_project_required"
+        | "oauth_project_scope_required"
         | "cannot_modify_disabled_translation"
         | "azure_config_required"
         | "s3_config_required"
@@ -3056,6 +3094,9 @@ export interface components {
         | "user_is_subscribed_to_paid_plan"
         | "cannot_create_free_plan_without_fixed_type"
         | "cannot_modify_plan_free_status"
+        | "plan_invoiced_requires_free"
+        | "plan_incomplete_usd_pricing"
+        | "self_hosted_plan_usd_price_only_for_hosted_words"
         | "key_id_not_provided"
         | "free_self_hosted_seat_limit_exceeded"
         | "advanced_params_not_supported"
@@ -3117,6 +3158,9 @@ export interface components {
         | "native_authentication_disabled"
         | "invitation_organization_mismatch"
         | "user_is_managed_by_organization"
+        | "user_is_not_managed_by_organization"
+        | "user_disabled_by_admin"
+        | "cannot_manage_platform_staff_account"
         | "cannot_set_sso_provider_missing_fields"
         | "namespaces_cannot_be_disabled_when_namespace_exists"
         | "namespace_cannot_be_used_when_feature_is_disabled"
@@ -3128,15 +3172,33 @@ export interface components {
         | "specify_plan_id_or_custom_plan"
         | "custom_plans_has_to_be_private"
         | "cannot_create_free_plan_with_prices"
+        | "cannot_create_free_plan_with_multiple_tiers"
+        | "cloud_plan_must_have_at_least_one_tier"
+        | "cloud_plan_must_have_exactly_one_tier"
+        | "cloud_plan_tier_missing_included_words"
+        | "cloud_plan_tier_invalid_allowance_for_metric"
+        | "cloud_plan_tier_missing_eur_price"
+        | "cloud_plan_usd_price_only_for_hosted_words"
+        | "organization_currency_already_set"
+        | "plan_not_priced_in_organization_currency"
+        | "plan_tiers_disagree_on_billing_period"
+        | "self_hosted_plan_missing_included_words"
+        | "stripe_product_id_required"
+        | "stripe_product_name_required"
         | "subscription_not_scheduled_for_cancellation"
         | "cannot_cancel_trial"
         | "cannot_update_without_modification"
+        | "plan_is_not_a_downgrade"
+        | "cannot_downgrade_word_tier"
         | "current_subscription_is_not_trialing"
         | "sorting_and_paging_is_not_supported_when_using_cursor"
         | "strings_metric_are_not_supported"
         | "plan_key_limit_exceeded"
         | "keys_spending_limit_exceeded"
         | "plan_seat_limit_exceeded"
+        | "plan_word_limit_exceeded"
+        | "words_spending_limit_exceeded"
+        | "auto_upgrade_cannot_be_disabled_over_limit"
         | "instance_not_using_license_key"
         | "invalid_path"
         | "llm_provider_not_found"
@@ -3208,7 +3270,9 @@ export interface components {
         | "source_and_target_plan_must_be_different"
         | "project_import_version_mismatch"
         | "project_import_missing_project_json"
-        | "project_import_corrupt_archive";
+        | "project_import_corrupt_archive"
+        | "server_busy"
+        | "cannot_delete_initial_user";
       params?: { [key: string]: unknown }[];
     };
     ExistenceEntityDescription: {
@@ -3470,6 +3534,7 @@ export interface components {
         | "webhooks.manage"
         | "tasks.view"
         | "tasks.edit"
+        | "tasks.assigned-access"
         | "prompts.view"
         | "prompts.edit"
         | "translation-labels.manage"
@@ -3782,6 +3847,8 @@ export interface components {
         | "SET_KEYS_NAMESPACE"
         | "AUTOMATION"
         | "BILLING_TRIAL_EXPIRATION_NOTICE"
+        | "BILLING_AUTO_UPGRADE_NOTICE"
+        | "BILLING_AUTO_UPGRADE_RENEWAL"
         | "ASSIGN_TRANSLATION_LABEL"
         | "UNASSIGN_TRANSLATION_LABEL"
         | "QA_CHECK"
@@ -4550,6 +4617,45 @@ export interface components {
        */
       notificationIds: number[];
     };
+    OAuth2AuthorizeRequest: {
+      /** @description Registered client id from the client's authorize request */
+      clientId: string;
+      codeChallenge?: string;
+      codeChallengeMethod?: string;
+      project?: string;
+      /** @description Redirect URI from the client's authorize request; must be registered for the client */
+      redirectUri: string;
+      responseType?: string;
+      scope?: string;
+      state?: string;
+    };
+    OAuth2AuthorizeResultModel: {
+      consentState?: string;
+      redirectUrl?: string;
+    };
+    OAuth2ConsentRequest: {
+      /**
+       * Format: int64
+       * @description Required when projectScope is SINGLE_PROJECT
+       */
+      projectId?: number;
+      /**
+       * @description Whether the token is bound to one project or to every project the user can reach. Required when approving: the widest grant must be asked for, never fallen into. Ignored on a denial, which grants nothing.
+       * @enum {string}
+       */
+      projectScope?: "SINGLE_PROJECT" | "ALL_PROJECTS";
+      scopes?: string[];
+      /** @description The consent state identifying the pending authorization */
+      state: string;
+    };
+    OAuth2ProjectModel: {
+      /** Format: int64 */
+      id: number;
+      name: string;
+    };
+    OAuth2RedirectModel: {
+      redirectUrl: string;
+    };
     OAuthPublicConfigDTO: {
       clientId?: string;
       enabled: boolean;
@@ -5025,6 +5131,7 @@ export interface components {
         | "webhooks.manage"
         | "tasks.view"
         | "tasks.edit"
+        | "tasks.assigned-access"
         | "prompts.view"
         | "prompts.edit"
         | "translation-labels.manage"
@@ -5131,6 +5238,7 @@ export interface components {
         | "webhooks.manage"
         | "tasks.view"
         | "tasks.edit"
+        | "tasks.assigned-access"
         | "prompts.view"
         | "prompts.edit"
         | "translation-labels.manage"
@@ -5195,14 +5303,19 @@ export interface components {
       seats: number;
       /** Format: int64 */
       translations: number;
+      /** Format: int64 */
+      words: number;
     };
     PlanPricesModel: {
       perSeat: number;
       perThousandKeys: number;
       perThousandMtCredits?: number;
+      perThousandMtCreditsUsd?: number;
       perThousandTranslations?: number;
       subscriptionMonthly: number;
+      subscriptionMonthlyUsd: number;
       subscriptionYearly: number;
+      subscriptionYearlyUsd: number;
     };
     PlausibleDto: {
       domain?: string;
@@ -5744,8 +5857,9 @@ export interface components {
       /** Format: int64 */
       id: number;
       includedUsage: components["schemas"]["PlanIncludedUsageModel"];
+      invoiced: boolean;
       /** @enum {string} */
-      metricType: "KEYS_SEATS" | "STRINGS";
+      metricType: "KEYS_SEATS" | "STRINGS" | "HOSTED_WORDS";
       name: string;
       nonCommercial: boolean;
       public: boolean;
@@ -5804,6 +5918,7 @@ export interface components {
       screenshotsUrl: string;
       showVersion: boolean;
       slack: components["schemas"]["SlackDTO"];
+      testClockEnabled: boolean;
       /** Format: int32 */
       translationsViewLanguagesLimit: number;
       userCanCreateOrganizations: boolean;
@@ -5870,6 +5985,11 @@ export interface components {
       currentTranslations: number;
       /**
        * Format: int64
+       * @description How many hosted words are currently stored by organization
+       */
+      currentWords: number;
+      /**
+       * Format: int64
        * @deprecated
        * @description Customers were able to buy extra credits separately in the past.
        *
@@ -5896,6 +6016,11 @@ export interface components {
        * @description How many translations are included in current subscription plan. How many translations can organization use without additional costs
        */
       includedTranslations: number;
+      /**
+       * Format: int64
+       * @description How many hosted words are included in current subscription plan (for word-based plans). How many words the organization can host without additional costs.
+       */
+      includedWords: number;
       /** @description Whether the current plan is pay-as-you-go of fixed. For pay-as-you-go plans, the spending limit is the top limit. */
       isPayAsYouGo: boolean;
       /**
@@ -5920,6 +6045,11 @@ export interface components {
        * @description Currently used credits including credits used over the limit
        */
       usedMtCredits: number;
+      /**
+       * Format: int64
+       * @description Total number of hosted words the organization can store (-1 for unlimited). For pay-as-you-go, the top limit is the spending limit.
+       */
+      wordsLimit: number;
     };
     QaCheckCategoryModel: {
       /** @enum {string} */
@@ -6319,7 +6449,10 @@ export interface components {
       /** Format: int64 */
       id: number;
       includedUsage: components["schemas"]["PlanIncludedUsageModel"];
+      invoiced: boolean;
       isPayAsYouGo: boolean;
+      /** @enum {string} */
+      metricType: "KEYS_SEATS" | "STRINGS" | "HOSTED_WORDS";
       name: string;
       nonCommercial: boolean;
       prices: components["schemas"]["PlanPricesModel"];
@@ -6921,6 +7054,14 @@ export interface components {
         | "rate_limited"
         | "pat_access_not_allowed"
         | "pak_access_not_allowed"
+        | "oauth_access_not_allowed"
+        | "invalid_oauth_token"
+        | "oauth_token_expired"
+        | "oauth_unknown_client"
+        | "oauth_redirect_uri_not_registered"
+        | "oauth_unknown_state"
+        | "oauth_project_required"
+        | "oauth_project_scope_required"
         | "cannot_modify_disabled_translation"
         | "azure_config_required"
         | "s3_config_required"
@@ -6944,6 +7085,9 @@ export interface components {
         | "user_is_subscribed_to_paid_plan"
         | "cannot_create_free_plan_without_fixed_type"
         | "cannot_modify_plan_free_status"
+        | "plan_invoiced_requires_free"
+        | "plan_incomplete_usd_pricing"
+        | "self_hosted_plan_usd_price_only_for_hosted_words"
         | "key_id_not_provided"
         | "free_self_hosted_seat_limit_exceeded"
         | "advanced_params_not_supported"
@@ -7005,6 +7149,9 @@ export interface components {
         | "native_authentication_disabled"
         | "invitation_organization_mismatch"
         | "user_is_managed_by_organization"
+        | "user_is_not_managed_by_organization"
+        | "user_disabled_by_admin"
+        | "cannot_manage_platform_staff_account"
         | "cannot_set_sso_provider_missing_fields"
         | "namespaces_cannot_be_disabled_when_namespace_exists"
         | "namespace_cannot_be_used_when_feature_is_disabled"
@@ -7016,15 +7163,33 @@ export interface components {
         | "specify_plan_id_or_custom_plan"
         | "custom_plans_has_to_be_private"
         | "cannot_create_free_plan_with_prices"
+        | "cannot_create_free_plan_with_multiple_tiers"
+        | "cloud_plan_must_have_at_least_one_tier"
+        | "cloud_plan_must_have_exactly_one_tier"
+        | "cloud_plan_tier_missing_included_words"
+        | "cloud_plan_tier_invalid_allowance_for_metric"
+        | "cloud_plan_tier_missing_eur_price"
+        | "cloud_plan_usd_price_only_for_hosted_words"
+        | "organization_currency_already_set"
+        | "plan_not_priced_in_organization_currency"
+        | "plan_tiers_disagree_on_billing_period"
+        | "self_hosted_plan_missing_included_words"
+        | "stripe_product_id_required"
+        | "stripe_product_name_required"
         | "subscription_not_scheduled_for_cancellation"
         | "cannot_cancel_trial"
         | "cannot_update_without_modification"
+        | "plan_is_not_a_downgrade"
+        | "cannot_downgrade_word_tier"
         | "current_subscription_is_not_trialing"
         | "sorting_and_paging_is_not_supported_when_using_cursor"
         | "strings_metric_are_not_supported"
         | "plan_key_limit_exceeded"
         | "keys_spending_limit_exceeded"
         | "plan_seat_limit_exceeded"
+        | "plan_word_limit_exceeded"
+        | "words_spending_limit_exceeded"
+        | "auto_upgrade_cannot_be_disabled_over_limit"
         | "instance_not_using_license_key"
         | "invalid_path"
         | "llm_provider_not_found"
@@ -7096,7 +7261,9 @@ export interface components {
         | "source_and_target_plan_must_be_different"
         | "project_import_version_mismatch"
         | "project_import_missing_project_json"
-        | "project_import_corrupt_archive";
+        | "project_import_corrupt_archive"
+        | "server_busy"
+        | "cannot_delete_initial_user";
       params?: { [key: string]: unknown }[];
       success: boolean;
     };
@@ -7867,8 +8034,10 @@ export interface components {
     };
     UserAccountWithOrganizationRoleModel: {
       avatar?: components["schemas"]["Avatar"];
+      disabled: boolean;
       /** Format: int64 */
       id: number;
+      managed: boolean;
       mfaEnabled: boolean;
       name: string;
       /** @enum {string} */
@@ -9295,11 +9464,11 @@ export interface operations {
       };
     };
   };
-  /** Returns current PAK or PAT permissions for current user, api-key and project */
+  /** Returns the current PAK, PAT or OAuth token permissions for current user, api-key and project */
   getCurrentPermissions: {
     parameters: {
       query: {
-        /** Required when using with PAT */
+        /** Required with a PAT, and with an OAuth token not bound to exactly one project */
         projectId?: number;
       };
     };
@@ -10420,6 +10589,147 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["NotificationsMarkSeenRequest"];
+      };
+    };
+  };
+  authorize: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OAuth2AuthorizeResultModel"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OAuth2AuthorizeRequest"];
+      };
+    };
+  };
+  consent: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "application/json": components["schemas"]["OAuth2RedirectModel"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OAuth2ConsentRequest"];
+      };
+    };
+  };
+  consentInfo: {
+    parameters: {
+      query: {
+        state: string;
+      };
+    };
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ConsentInfoModel"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
       };
     };
   };
@@ -14046,8 +14356,98 @@ export interface operations {
       };
     };
   };
-  /** Remove user from organization. If user is managed by the organization, their account is disabled instead. */
+  /** Removes the user from the organization. Users managed by the organization cannot be removed; disable them instead. */
   removeUser: {
+    parameters: {
+      path: {
+        organizationId: number;
+        userId: number;
+      };
+    };
+    responses: {
+      /** OK */
+      200: unknown;
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+  };
+  /** Disables the account of a user managed by this organization. */
+  disableManagedUser: {
+    parameters: {
+      path: {
+        organizationId: number;
+        userId: number;
+      };
+    };
+    responses: {
+      /** OK */
+      200: unknown;
+      /** Bad Request */
+      400: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Unauthorized */
+      401: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Forbidden */
+      403: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "application/json":
+            | components["schemas"]["ErrorResponseTyped"]
+            | components["schemas"]["ErrorResponseBody"];
+        };
+      };
+    };
+  };
+  /** Re-enables the disabled account of a user managed by this organization. */
+  enableManagedUser: {
     parameters: {
       path: {
         organizationId: number;
@@ -19405,6 +19805,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19417,6 +19819,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19430,6 +19834,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19443,6 +19849,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19456,6 +19864,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19469,6 +19879,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19484,6 +19896,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19500,6 +19914,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19660,6 +20076,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19672,6 +20090,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19685,6 +20105,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19698,6 +20120,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19711,6 +20135,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19724,6 +20150,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19739,6 +20167,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19755,6 +20185,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19959,6 +20391,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19971,6 +20405,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19984,6 +20420,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -19997,6 +20435,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -20010,6 +20450,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -20023,6 +20465,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -20038,6 +20482,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -20054,6 +20500,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26005,6 +26453,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26017,6 +26467,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26030,6 +26482,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26043,6 +26497,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26056,6 +26512,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26069,6 +26527,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26084,6 +26544,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26100,6 +26562,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26472,6 +26936,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26484,6 +26950,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26497,6 +26965,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26510,6 +26980,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26523,6 +26995,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26536,6 +27010,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26551,6 +27027,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -26567,6 +27045,8 @@ export interface operations {
          *
          * Pattern syntax: `*` matches any sequence of characters
          * (`cart*` = starts with, `*_title` = ends with). A pattern without `*` matches anywhere in the value.
+         * A leading `=` matches the whole value (`=cart` = exactly "cart"); `*` still works inside it.
+         * To match a value that itself starts with `=`, use `*=…*`.
          * Matching is case-insensitive. `%` and `_` are matched literally.
          * You can use this parameter multiple times; all patterns must match (logical AND).
          * Limits: a pattern must not be empty, may be at most 500 characters long
@@ -28591,6 +29071,7 @@ export interface operations {
               | "webhooks.manage"
               | "tasks.view"
               | "tasks.edit"
+              | "tasks.assigned-access"
               | "prompts.view"
               | "prompts.edit"
               | "translation-labels.manage"

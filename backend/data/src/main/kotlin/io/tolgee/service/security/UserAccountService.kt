@@ -22,12 +22,15 @@ import io.tolgee.exceptions.NotFoundException
 import io.tolgee.exceptions.PermissionException
 import io.tolgee.model.UserAccount
 import io.tolgee.model.enums.ThirdPartyAuthType
+import io.tolgee.model.enums.UserDisabledBy
+import io.tolgee.model.isSupporterOrAdmin
 import io.tolgee.model.notifications.Notification
 import io.tolgee.model.notifications.NotificationType
 import io.tolgee.model.views.ExtendedUserAccountInProject
 import io.tolgee.model.views.UserAccountInProjectView
 import io.tolgee.model.views.UserAccountWithOrganizationRoleView
 import io.tolgee.repository.UserAccountRepository
+import io.tolgee.security.oauth2.OAuth2AuthorizationService
 import io.tolgee.service.AiPlaygroundResultService
 import io.tolgee.service.AvatarService
 import io.tolgee.service.EmailVerificationService
@@ -89,6 +92,10 @@ class UserAccountService(
   @Autowired
   private lateinit var notificationService: NotificationService
 
+  @Autowired
+  @Lazy
+  private lateinit var oauth2AuthorizationService: OAuth2AuthorizationService
+
   private val emailValidator = EmailValidator()
 
   fun findActive(username: String): UserAccount? {
@@ -109,6 +116,10 @@ class UserAccountService(
 
   fun findActive(id: Long): UserAccount? {
     return userAccountRepository.findActive(id)
+  }
+
+  fun findActiveOrDisabled(id: Long): UserAccount? {
+    return userAccountRepository.findActiveOrDisabled(id)
   }
 
   @Transactional
@@ -222,6 +233,7 @@ class UserAccountService(
   }
 
   private fun deleteWithFetchedData(toDelete: UserAccount) {
+    oauth2AuthorizationService.revokeAllForUser(toDelete.id)
     toDelete.emailVerification?.let {
       entityManager.remove(it)
     }
@@ -304,7 +316,7 @@ class UserAccountService(
     userAccount: UserAccount,
     password: String?,
   ): UserAccount {
-    resetTokensValidNotBefore(userAccount)
+    revokeSessionsAndOAuthGrants(userAccount)
     userAccount.password = passwordEncoder.encode(password)
     return userAccountRepository.save(userAccount)
   }
@@ -338,7 +350,7 @@ class UserAccountService(
         ?: throw ValidationException(Message.INVALID_OTP_CODE)
     userAccount.totpKey = key
     userAccount.totpLastUsedTimeStep = matchedStep
-    resetTokensValidNotBefore(userAccount)
+    revokeSessionsAndOAuthGrants(userAccount)
     val savedUser = userAccountRepository.save(userAccount)
     notifySelf(userAccount, NotificationType.MFA_ENABLED)
     return savedUser
@@ -351,7 +363,7 @@ class UserAccountService(
     userAccount.totpLastUsedTimeStep = null
     // note: if support for more MFA methods is added, this should be only done if no other MFA method is enabled
     userAccount.mfaRecoveryCodes = emptyList()
-    resetTokensValidNotBefore(userAccount)
+    revokeSessionsAndOAuthGrants(userAccount)
     val savedUser = userAccountRepository.save(userAccount)
     notifySelf(userAccount, NotificationType.MFA_DISABLED)
     return savedUser
@@ -563,7 +575,7 @@ class UserAccountService(
     val matches = passwordEncoder.matches(dto.currentPassword, userAccount.password)
     if (!matches) throw PermissionException(Message.WRONG_CURRENT_PASSWORD)
 
-    resetTokensValidNotBefore(userAccount)
+    revokeSessionsAndOAuthGrants(userAccount)
     userAccount.password = passwordEncoder.encode(dto.password)
     userAccount.passwordChanged = true
     val savedUser = userAccountRepository.save(userAccount)
@@ -595,13 +607,15 @@ class UserAccountService(
     userAccount.username = newEmail
   }
 
+  @CacheEvict(cacheNames = [Caches.USER_ACCOUNTS], key = "#userAccount.id")
   fun invalidateTokens(userAccount: UserAccount): UserAccount {
-    resetTokensValidNotBefore(userAccount)
+    revokeSessionsAndOAuthGrants(userAccount)
     return userAccountRepository.save(userAccount)
   }
 
-  private fun resetTokensValidNotBefore(userAccount: UserAccount) {
+  private fun revokeSessionsAndOAuthGrants(userAccount: UserAccount) {
     userAccount.tokensValidNotBefore = DateUtils.truncate(currentDateProvider.date, Calendar.SECOND)
+    oauth2AuthorizationService.revokeAllForUser(userAccount.id)
   }
 
   private fun publishUserInfoUpdatedEvent(
@@ -646,20 +660,68 @@ class UserAccountService(
 
   @Transactional
   @CacheEvict(cacheNames = [Caches.USER_ACCOUNTS], key = "#userId")
-  fun disable(userId: Long) {
-    val user = this.get(userId)
+  fun disable(
+    userId: Long,
+    actingAs: UserDisabledBy,
+  ) {
+    val user = userAccountRepository.findActiveOrDisabled(userId) ?: throw NotFoundException(Message.USER_NOT_FOUND)
+    checkOrganizationMayActOnAccount(user, actingAs)
+    if (user.disabledAt != null) {
+      takeOverDisable(user, actingAs)
+      return
+    }
     user.disabledAt = currentDateProvider.date
+    user.disabledBy = actingAs
     this.save(user)
     this.applicationEventPublisher.publishEvent(OnUserCountChanged(decrease = true, this))
   }
 
   @Transactional
   @CacheEvict(cacheNames = [Caches.USER_ACCOUNTS], key = "#userId")
-  fun enable(userId: Long) {
-    val user = this.userAccountRepository.findDisabled(userId)
+  fun enable(
+    userId: Long,
+    requestedBy: UserDisabledBy,
+  ): Boolean {
+    val user = userAccountRepository.findActiveOrDisabled(userId) ?: throw NotFoundException(Message.USER_NOT_FOUND)
+    if (user.disabledAt == null) return false
+    checkOrganizationMayActOnAccount(user, requestedBy)
+    if (!canOverrideDisable(user.disabledBy, requestedBy)) {
+      throw ValidationException(Message.USER_DISABLED_BY_ADMIN)
+    }
     user.disabledAt = null
+    user.disabledBy = null
     this.save(user)
     this.applicationEventPublisher.publishEvent(OnUserCountChanged(decrease = false, this))
+    return true
+  }
+
+  private fun checkOrganizationMayActOnAccount(
+    user: UserAccount,
+    actingAs: UserDisabledBy,
+  ) {
+    if (actingAs == UserDisabledBy.ORGANIZATION && user.isSupporterOrAdmin()) {
+      throw ValidationException(Message.CANNOT_MANAGE_PLATFORM_STAFF_ACCOUNT)
+    }
+  }
+
+  private fun takeOverDisable(
+    user: UserAccount,
+    actingAs: UserDisabledBy,
+  ) {
+    if (user.disabledBy == actingAs) return
+    if (!canOverrideDisable(user.disabledBy, actingAs)) {
+      throw ValidationException(Message.USER_DISABLED_BY_ADMIN)
+    }
+    user.disabledBy = actingAs
+    this.save(user)
+  }
+
+  private fun canOverrideDisable(
+    storedDisabledBy: UserDisabledBy?,
+    requestedBy: UserDisabledBy,
+  ): Boolean {
+    if (requestedBy == UserDisabledBy.ADMIN) return true
+    return storedDisabledBy == UserDisabledBy.ORGANIZATION
   }
 
   fun transferLegacyNoAuthUser() {

@@ -4,7 +4,6 @@ import { useApiQuery } from 'tg.service/http/useQueryApi';
 import { isAtLeastMemberOrgRole } from 'tg.fixtures/organizationRole';
 
 type OrganizationModel = components['schemas']['OrganizationModel'];
-type UsageModel = components['schemas']['PublicUsageModel'];
 
 type Props = {
   organization?: OrganizationModel;
@@ -18,10 +17,8 @@ export const useOrganizationUsageService = ({
   const isOrganizationMember = isAtLeastMemberOrgRole(
     organization?.currentUserRole
   );
-  const [organizationUsage, setOrganizationUsage] = useState<
-    UsageModel | undefined
-  >(undefined);
   const [planLimitErrors, setPlanLimitErrors] = useState(0);
+  const [planLimitErrorCode, setPlanLimitErrorCode] = useState<string>();
   const [spendingLimitErrors, setSpendingLimitErrors] = useState(0);
 
   const usageEnabled =
@@ -42,23 +39,13 @@ export const useOrganizationUsageService = ({
       refetchOnMount: false,
       cacheTime: Infinity,
       enabled: usageEnabled,
-      onSuccess(data) {
-        setOrganizationUsage(data);
-      },
     },
   });
 
-  const updateUsageData = (data: Partial<UsageModel>) =>
-    setOrganizationUsage((val) =>
-      val
-        ? {
-            ...val,
-            ...data,
-          }
-        : val
-    );
+  const usage = usageEnabled ? usageLoadable.data : undefined;
 
-  const incrementPlanLimitErrors = () => {
+  const incrementPlanLimitErrors = (code?: string) => {
+    setPlanLimitErrorCode(code);
     setPlanLimitErrors((v) => v + 1);
   };
 
@@ -71,6 +58,9 @@ export const useOrganizationUsageService = ({
    * We don't want to disturb the translators that much with the error.
    */
   const increaseCreditPlanLimitErrors = () => {
+    // Not a word limit: PlanLimitPopoverCloud reads this code to decide whether to offer the
+    // word auto-upgrade, and it is never reset on its own.
+    setPlanLimitErrorCode(undefined);
     setPlanLimitErrors((v) => {
       if (v > 0) {
         return v;
@@ -106,13 +96,13 @@ export const useOrganizationUsageService = ({
 
   return {
     state: {
-      usage: organizationUsage,
+      usage,
       planLimitErrors,
+      planLimitErrorCode,
       spendingLimitErrors,
     },
     actions: {
       refetchUsage,
-      updateUsageData,
       incrementPlanLimitErrors,
       incrementSpendingLimitErrors,
       increaseCreditPlanLimitErrors,

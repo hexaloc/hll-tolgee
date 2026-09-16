@@ -2,10 +2,10 @@ package io.tolgee.mcp
 
 import io.modelcontextprotocol.server.McpServer
 import io.modelcontextprotocol.server.McpSyncServer
-import io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider
 import io.modelcontextprotocol.spec.McpSchema
 import io.tolgee.util.VersionProvider
 import org.redisson.api.RedissonClient
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider
 import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -19,7 +19,7 @@ class McpConfig {
   fun mcpTransportProvider(): WebMvcStreamableServerTransportProvider {
     return WebMvcStreamableServerTransportProvider
       .builder()
-      .mcpEndpoint("/mcp/developer")
+      .mcpEndpoint(McpConstants.DEVELOPER_ENDPOINT_PATH)
       .build()
   }
 

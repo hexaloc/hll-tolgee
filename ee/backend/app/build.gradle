@@ -92,6 +92,7 @@ dependencies {
     liquibaseRuntime libs.liquibaseHibernate
     liquibaseRuntime libs.kotlinReflect
     liquibaseRuntime(project(":data"))
+    liquibaseRuntime(project(":api"))
     liquibaseRuntime sourceSets.main.output
     liquibaseRuntime 'org.springframework.boot:spring-boot-starter-data-jpa'
 
@@ -113,7 +114,7 @@ dependencies {
     /**
      * HANDLEBARS
      */
-    implementation('com.github.jknack:handlebars:4.4.0')
+    implementation('com.github.jknack:handlebars:4.5.4')
 
     ktlint(project(":ktlint"))
 }

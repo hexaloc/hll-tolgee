@@ -1,5 +1,7 @@
 package io.tolgee
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.tolgee.Metrics
 import io.tolgee.constants.Message
 import io.tolgee.controllers.PublicController
 import io.tolgee.fixtures.andAssertThatJson
@@ -7,7 +9,9 @@ import io.tolgee.fixtures.andIsForbidden
 import io.tolgee.fixtures.andIsUnauthorized
 import io.tolgee.fixtures.mapResponseTo
 import io.tolgee.model.Project
+import io.tolgee.model.enums.UserDisabledBy
 import io.tolgee.security.authentication.JwtService
+import io.tolgee.security.oauth2.OAuth2BearerChallengeProvider
 import io.tolgee.security.thirdParty.GithubOAuthDelegate.GithubEmailResponse
 import io.tolgee.testing.AbstractControllerTest
 import io.tolgee.util.GitHubAuthUtil
@@ -52,10 +56,18 @@ class AuthTest : AbstractControllerTest() {
 
   private lateinit var project: Project
 
+  @Autowired
+  private lateinit var bearerChallengeProvider: OAuth2BearerChallengeProvider
+
   @BeforeEach
   fun setup() {
     project = dbPopulator.createBase().project
-    authMvc = MockMvcBuilders.standaloneSetup(publicController!!).setControllerAdvice(ExceptionHandlers()).build()
+    authMvc =
+      MockMvcBuilders
+        .standaloneSetup(
+          publicController!!,
+        ).setControllerAdvice(ExceptionHandlers(Metrics(SimpleMeterRegistry()), bearerChallengeProvider))
+        .build()
   }
 
   @AfterEach
@@ -281,7 +293,7 @@ class AuthTest : AbstractControllerTest() {
   fun `rejects requests from a user disabled after the token was issued`() {
     val user = userAccountService[initialUsername]
     val token = jwtService.emitToken(user.id)
-    userAccountService.disable(user.id)
+    userAccountService.disable(user.id, UserDisabledBy.ADMIN)
 
     val mvcResult =
       mvc
@@ -301,7 +313,7 @@ class AuthTest : AbstractControllerTest() {
     assertThat(oAuth2AuthUtil.authorizeOAuth2User().response.status).isEqualTo(200)
 
     val user = userAccountService.get("fakeEmail@domain.com")
-    userAccountService.disable(user.id)
+    userAccountService.disable(user.id, UserDisabledBy.ADMIN)
 
     val response = oAuth2AuthUtil.authorizeOAuth2User().response
     assertThat(response.status).isEqualTo(401)
