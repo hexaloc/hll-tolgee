@@ -1,6 +1,7 @@
 package io.tolgee.ee.component.limitsAndReporting
 
 import io.tolgee.dtos.UsageLimits
+import io.tolgee.ee.EeProperties
 import io.tolgee.ee.service.eeSubscription.EeSubscriptionServiceImpl
 import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Component
@@ -13,17 +14,24 @@ import org.springframework.stereotype.Component
 class SelfHostedLimitsProvider(
   @Lazy
   private val eeSubscriptionServiceImpl: EeSubscriptionServiceImpl,
+  private val eeProperties: EeProperties = EeProperties(),
 ) {
   fun getLimits(): UsageLimits {
     val subscription = eeSubscriptionServiceImpl.findSubscriptionDto() ?: return DEFAULT_LIMITS
+    val wordMeteringEnabled = eeProperties.wordMeteringEnabled
     return UsageLimits(
       isPayAsYouGo = subscription.isPayAsYouGo,
       keys = UsageLimits.Limit(included = subscription.includedKeys, limit = subscription.keysLimit),
       seats = UsageLimits.Limit(included = subscription.includedSeats, limit = subscription.seatsLimit),
       strings = DEFAULT_LIMITS.strings,
       mtCreditsInCents = DEFAULT_LIMITS.mtCreditsInCents,
-      words = UsageLimits.Limit(included = subscription.includedWords, limit = subscription.wordsLimit),
-      metersWords = subscription.metersWords,
+      words =
+        if (wordMeteringEnabled) {
+          UsageLimits.Limit(included = subscription.includedWords, limit = subscription.wordsLimit)
+        } else {
+          DEFAULT_LIMITS.words
+        },
+      metersWords = wordMeteringEnabled && subscription.metersWords,
       autoUpgradeEffective = subscription.autoUpgradeEffective,
       isTrial = false,
     )

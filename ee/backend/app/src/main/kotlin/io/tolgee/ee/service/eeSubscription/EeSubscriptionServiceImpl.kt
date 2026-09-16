@@ -61,7 +61,7 @@ class EeSubscriptionServiceImpl(
   private val usageToReportService: UsageToReportService,
 ) : EeSubscriptionProvider,
   Logging {
-  var bypassSeatCountCheck = false
+  var bypassSeatCountCheck = eeProperties.bypassSeatCountCheck
 
   @Cacheable(Caches.Companion.EE_SUBSCRIPTION, key = "1")
   override fun findSubscriptionDto(): EeSubscriptionDto? {

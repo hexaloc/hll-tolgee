@@ -23,6 +23,16 @@ class EeProperties(
   @DocProperty(hidden = true)
   var scheduledReportingEnabled: Boolean = true,
   /**
+   * Skips self-hosted seat count enforcement for controlled testing.
+   */
+  @DocProperty(hidden = true)
+  var bypassSeatCountCheck: Boolean = false,
+  /**
+   * Enables self-hosted word metering, including limit enforcement and usage reporting.
+   */
+  @DocProperty(hidden = true)
+  var wordMeteringEnabled: Boolean = true,
+  /**
    * How often is the license checked with Tolgee Cloud
    */
   @DocProperty(hidden = true)
