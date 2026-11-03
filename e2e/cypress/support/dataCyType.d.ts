@@ -26,13 +26,6 @@ declare namespace DataCy {
         "administration-ee-license-key-input": true;
         "administration-ee-license-release-key-button": true;
         "administration-frame": true;
-        "administration-organization-features-dialog": true;
-        "administration-organization-features-save": true;
-        "administration-organization-hidden-feature-checkbox": true;
-        "administration-organization-plan-feature-checkbox": true;
-        "administration-organization-plan-feature-from-plan": true;
-        "administration-organization-plan-feature-granted": true;
-        "administration-organizations-features-button": true;
         "administration-organizations-list-item": true;
         "administration-organizations-projects-button": true;
         "administration-organizations-settings-button": true;
@@ -617,7 +610,7 @@ declare namespace DataCy {
         "project-contributor-item-last-contribution": true;
         "project-dashboard-activity-chart": true;
         "project-dashboard-activity-list": true;
-        "project-dashboard-base-word-count": true;
+        "project-dashboard-content": true;
         "project-dashboard-description": true;
         "project-dashboard-key-count": true;
         "project-dashboard-language-bar": true;
@@ -630,17 +623,16 @@ declare namespace DataCy {
         "project-dashboard-language-menu-export": true;
         "project-dashboard-language-menu-settings": true;
         "project-dashboard-languages-edit": true;
-        "project-dashboard-members": true;
         "project-dashboard-members-count": true;
         "project-dashboard-progress": true;
         "project-dashboard-project-totals": true;
         "project-dashboard-reviewed-percentage": true;
-        "project-dashboard-strings": true;
         "project-dashboard-strings-count": true;
         "project-dashboard-tags": true;
         "project-dashboard-task-count": true;
-        "project-dashboard-text": true;
+        "project-dashboard-team": true;
         "project-dashboard-translated-percentage": true;
+        "project-dashboard-words-count": true;
         "project-delete-button": true;
         "project-leave-button": true;
         "project-list-languages": true;
@@ -728,6 +720,7 @@ declare namespace DataCy {
         "project-states-bar-legend": true;
         "project-states-bar-root": true;
         "project-states-bar-state-progress": true;
+        "project-switch": true;
         "project-transfer-autocomplete-field": true;
         "project-transfer-autocomplete-suggested-option": true;
         "project-transfer-confirmation-field": true;
@@ -814,6 +807,7 @@ declare namespace DataCy {
         "suggestions-show-all": true;
         "switch-popover-footer-action": true;
         "switch-popover-item": true;
+        "switch-popover-load-more": true;
         "switch-popover-new": true;
         "switch-popover-search": true;
         "tag-autocomplete-input": true;
