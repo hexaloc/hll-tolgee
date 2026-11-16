@@ -1,5 +1,6 @@
 package io.tolgee.service.translation
 
+import io.tolgee.activity.data.ActivityType
 import io.tolgee.batch.BatchJobService
 import io.tolgee.batch.data.BatchJobType
 import io.tolgee.batch.data.BatchTranslationTargetItem
@@ -74,7 +75,7 @@ class AutoTranslationService(
       AutoTranslationRequest().apply {
         target =
           languageIds.flatMap { languageId ->
-            if (configs[languageId]?.usingTm == false && configs[languageId]?.usingPrimaryMtService == false) {
+            if (configs[languageId]?.let { translatesLanguage(it) } == false) {
               return@flatMap emptyList()
             }
             keyIds.map { keyId ->
@@ -160,10 +161,11 @@ class AutoTranslationService(
     useTranslationMemory: Boolean? = null,
     useMachineTranslation: Boolean? = null,
     isBatch: Boolean,
+    overrideExisting: Boolean,
   ) {
     tryUntilItDoesntBreakConstraint(maxRepeats = 10) {
       executeInNewTransaction(transactionManager) {
-        autoTranslateSync(key, forcedLanguageTags, useTranslationMemory, useMachineTranslation, isBatch)
+        autoTranslate(key, forcedLanguageTags, useTranslationMemory, useMachineTranslation, isBatch, overrideExisting)
       }
     }
   }
@@ -175,7 +177,26 @@ class AutoTranslationService(
     useMachineTranslation: Boolean? = null,
     isBatch: Boolean,
   ) {
-    val adjustedConfigs = getAdjustedConfigs(key, forcedLanguageTags, useTranslationMemory, useMachineTranslation)
+    autoTranslate(
+      key,
+      forcedLanguageTags,
+      useTranslationMemory,
+      useMachineTranslation,
+      isBatch,
+      overrideExisting = forcedLanguageTags != null,
+    )
+  }
+
+  private fun autoTranslate(
+    key: Key,
+    forcedLanguageTags: List<String>?,
+    useTranslationMemory: Boolean?,
+    useMachineTranslation: Boolean?,
+    isBatch: Boolean,
+    overrideExisting: Boolean,
+  ) {
+    val adjustedConfigs =
+      getAdjustedConfigs(key, forcedLanguageTags, useTranslationMemory, useMachineTranslation, overrideExisting)
 
     val translations =
       adjustedConfigs
@@ -213,14 +234,11 @@ class AutoTranslationService(
     forcedLanguageTags: List<String>?,
     useTranslationMemory: Boolean?,
     useMachineTranslation: Boolean?,
+    overrideExisting: Boolean,
   ) = getPerLanguageConfigs(key.project).mapNotNull {
-    if (forcedLanguageTags != null) {
-      // if we got languages provided, we want to override the existing language values
-      it.override = true
-
-      if (!forcedLanguageTags.contains(it.language.tag)) {
-        return@mapNotNull null
-      }
+    it.override = overrideExisting
+    if (forcedLanguageTags != null && !forcedLanguageTags.contains(it.language.tag)) {
+      return@mapNotNull null
     }
 
     it.usingTm = useTranslationMemory ?: it.usingTm
@@ -370,6 +388,17 @@ class AutoTranslationService(
   fun getConfigs(project: Project) =
     addDefaultConfig(project, autoTranslationConfigRepository.findAllByProject(project))
 
+  fun startsForActivity(
+    activityType: ActivityType?,
+    configs: Collection<AutoTranslationConfig>,
+  ): Boolean {
+    if (configs.none { translatesLanguage(it) }) return false
+    if (activityType in LOW_VOLUME_ACTIVITIES) return true
+    return activityType in IMPORT_ACTIVITIES && configs.any { it.enableForImport }
+  }
+
+  fun translatesLanguage(config: AutoTranslationConfig): Boolean = config.usingTm || config.usingPrimaryMtService
+
   private fun addDefaultConfig(
     project: Project,
     list: List<AutoTranslationConfig>?,
@@ -458,5 +487,12 @@ class AutoTranslationService(
     autoTranslationConfigRepository.deleteAll(toDelete)
     autoTranslationConfigRepository.saveAll(result)
     return addDefaultConfig(projectEntity, result)
+  }
+
+  companion object {
+    val IMPORT_ACTIVITIES = listOf(ActivityType.IMPORT)
+
+    val LOW_VOLUME_ACTIVITIES =
+      listOf(ActivityType.SET_TRANSLATIONS, ActivityType.CREATE_KEY, ActivityType.COMPLEX_EDIT)
   }
 }
