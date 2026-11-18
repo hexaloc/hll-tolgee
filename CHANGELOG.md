@@ -1,3 +1,37 @@
+## [3.245.1](https://github.com/tolgee/tolgee-platform/compare/v3.245.0...v3.245.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* disable the vulnerable Base64 intrinsic in the Docker image (CVE-2026-114938) ([#4063](https://github.com/tolgee/tolgee-platform/issues/4063)) ([4b66187](https://github.com/tolgee/tolgee-platform/commit/4b661874a5ad12bc40549071ce414a19912c3f36))
+
+# [3.245.0](https://github.com/tolgee/tolgee-platform/compare/v3.244.0...v3.245.0) (2026-11-18)
+
+
+### Features
+
+* filter translations by AI review score ([#4060](https://github.com/tolgee/tolgee-platform/issues/4060)) ([9651419](https://github.com/tolgee/tolgee-platform/commit/9651419b90ececed80b1cb513cc2f3196a8f015e))
+
+# [3.244.0](https://github.com/tolgee/tolgee-platform/compare/v3.243.2...v3.244.0) (2026-11-18)
+
+
+### Bug Fixes
+
+* bump OkHttp to 4.12.1 to block compromised eMudhra certificates ([#4059](https://github.com/tolgee/tolgee-platform/issues/4059)) ([11fbec8](https://github.com/tolgee/tolgee-platform/commit/11fbec80331bfef7ae1ad7104b20e06e2165795e)), closes [#4019](https://github.com/tolgee/tolgee-platform/issues/4019)
+* verify the Slack signature for every interactivity payload ([#4043](https://github.com/tolgee/tolgee-platform/issues/4043)) ([bdd7d33](https://github.com/tolgee/tolgee-platform/commit/bdd7d330e031a0eb84d1cbeda3251695488353a5))
+
+
+### Features
+
+* community translation foundation (pitch tolgee/tolgee-platform[#3987](https://github.com/tolgee/tolgee-platform/issues/3987)) ([#3996](https://github.com/tolgee/tolgee-platform/issues/3996)) ([5212e6f](https://github.com/tolgee/tolgee-platform/commit/5212e6fd8c9a04c179ce14b1083456c2f9134f3d)), closes [tolgee/billing#350](https://github.com/tolgee/billing/issues/350) [tolgee/billing#350](https://github.com/tolgee/billing/issues/350)
+
+## [3.243.2](https://github.com/tolgee/tolgee-platform/compare/v3.243.1...v3.243.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* return to the page that required login after social and SSO login ([#4040](https://github.com/tolgee/tolgee-platform/issues/4040)) ([bc8f32b](https://github.com/tolgee/tolgee-platform/commit/bc8f32ba42aef6495da0525bdca1734e54a0aa17))
+
 ## [3.243.1](https://github.com/tolgee/tolgee-platform/compare/v3.243.0...v3.243.1) (2026-11-16)
 
 
